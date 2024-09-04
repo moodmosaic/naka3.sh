@@ -217,9 +217,31 @@ function run_node() {
    local pidfile="$3"
    local pid
 
-   BLOCKSTACK_DEBUG=1 STACKS_LOG_DEBUG=1 RUST_BACKTRACE=full stacks-node start --config "$node_conf" > "$logfile" 2>&1 &
-   pid="$!"
-   
+   # Prompt the user to start the stacks-node in another terminal tab.
+   echo "Please open a new terminal tab and manually run the following command:"
+   echo "BLOCKSTACK_DEBUG=1 STACKS_LOG_DEBUG=1 RUST_BACKTRACE=full stacks-node \
+start --config \"$node_conf\" > \"$logfile\" 2>&1"
+   echo ""
+
+   # Wait for the user to start the stacks-node.
+   read -p "Press Enter after you have started the stacks-node..."
+
+   # Automatically fetch the PIDs using pgrep.
+   pids=$(pgrep -f "stacks-node start")
+
+   # Check if more than one stacks-node process is running.
+   if [ "$(echo "$pids" | wc -l)" -gt 1 ]; then
+      echo "Error: More than one stacks-node process is running. Please ensure \
+only one instance is running."
+      return 1
+   elif [ -z "$pids" ]; then
+      echo "Error: Could not find the PID of the stacks-node. Make sure it is \
+running."
+      return 1
+   else
+      pid="$pids"
+   fi
+
    echo "$pid" > "$pidfile"
 
    debug "Node started: PID $pid"
